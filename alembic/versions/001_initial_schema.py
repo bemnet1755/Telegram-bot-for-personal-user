@@ -134,15 +134,17 @@ def upgrade() -> None:
     op.create_index("ix_inventory_batches_product_id", "inventory_batches", ["product_id"])
     op.create_index("ix_inventory_batches_received_at", "inventory_batches", ["received_at"])
 
-    # Add batch_id FK to inventory_movements now that the table exists.
-    op.create_foreign_key(
-        "fk_movements_batch_id",
-        "inventory_movements",
-        "inventory_batches",
-        ["batch_id"],
-        ["id"],
-        ondelete="SET NULL",
-    )
+    # Add batch_id FK to inventory_movements now that the table exists (PostgreSQL/standard).
+    bind = op.get_bind()
+    if bind.dialect.name != "sqlite":
+        op.create_foreign_key(
+            "fk_movements_batch_id",
+            "inventory_movements",
+            "inventory_batches",
+            ["batch_id"],
+            ["id"],
+            ondelete="SET NULL",
+        )
 
     # --- fifo_consumptions ---
     op.create_table(
@@ -177,7 +179,9 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_table("app_settings")
     op.drop_table("fifo_consumptions")
-    op.drop_constraint("fk_movements_batch_id", "inventory_movements", type_="foreignkey")
+    bind = op.get_bind()
+    if bind.dialect.name != "sqlite":
+        op.drop_constraint("fk_movements_batch_id", "inventory_movements", type_="foreignkey")
     op.drop_table("inventory_batches")
     op.drop_table("inventory_movements")
     op.drop_table("sale_items")
