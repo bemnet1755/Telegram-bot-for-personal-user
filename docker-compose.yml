@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: beza
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
+
+  bot:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      ALLOWED_TELEGRAM_USER_ID: ${ALLOWED_TELEGRAM_USER_ID}
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/beza
+      CURRENCY: ${CURRENCY:-ETB}
+      TIMEZONE: ${TIMEZONE:-Africa/Addis_Ababa}
+      ALLOW_NEGATIVE_STOCK: ${ALLOW_NEGATIVE_STOCK:-false}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_API_BASE: ${LLM_API_BASE:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+    command: >
+      sh -c "alembic upgrade head && python -m app.main"
+
+volumes:
+  pgdata:

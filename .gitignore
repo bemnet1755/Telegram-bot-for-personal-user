@@ -1,0 +1,30 @@
+# Secrets & local env
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Local data
+*.sqlite3
+*.db
