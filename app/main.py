@@ -19,8 +19,8 @@ from app.database.session import Database
 logger = logging.getLogger(__name__)
 
 
-def _register_commands(bot: Bot) -> None:
-    bot.set_my_commands(
+async def _register_commands(bot: Bot) -> None:
+    await bot.set_my_commands(
         [
             BotCommand(command="start", description="Open the main menu"),
             BotCommand(command="help", description="Show help"),
