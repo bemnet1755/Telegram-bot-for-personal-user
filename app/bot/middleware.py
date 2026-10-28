@@ -8,9 +8,10 @@
 from __future__ import annotations
 
 import logging
+from typing import Any, Awaitable, Callable, Dict
 
 from aiogram import BaseMiddleware
-from aiogram.types import Update
+from aiogram.types import TelegramObject, Update
 
 from app.config.settings import Settings
 
@@ -23,40 +24,60 @@ class AuthMiddleware(BaseMiddleware):
     """Only the configured user may use the bot."""
 
     def __init__(self, settings: Settings):
-        self._allowed = settings.allowed_telegram_user_id
+        self._allowed = int(settings.allowed_telegram_user_id)
 
-    async def __call__(self, handler, update: Update, **kwargs):
-        user = update.user
+    async def __call__(
+        self,
+        handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
+        event: TelegramObject,
+        data: Dict[str, Any],
+    ) -> Any:
+        user = data.get("event_from_user")
+        if user is None and isinstance(event, Update):
+            if event.message:
+                user = event.message.from_user
+            elif event.callback_query:
+                user = event.callback_query.from_user
+
         if user is None or user.id != self._allowed:
             # Inform unauthorized senders with a generic, information-free reply.
-            if update.message:
-                await update.message.answer(PRIVATE_MESSAGE)
-            elif update.callback_query:
-                try:
-                    await update.callback_query.answer()
-                    if update.callback_query.message:
-                        await update.callback_query.message.answer(PRIVATE_MESSAGE)
-                except Exception:  # message may be inaccessible
-                    pass
+            if isinstance(event, Update):
+                if event.message:
+                    await event.message.answer(PRIVATE_MESSAGE)
+                elif event.callback_query:
+                    try:
+                        await event.callback_query.answer(PRIVATE_MESSAGE, show_alert=True)
+                    except Exception:
+                        pass
             logger.warning(
-                "Rejected unauthorized access user_id=%s update=%s",
+                "Rejected unauthorized access user_id=%s update=%s (expected %s)",
                 user.id if user else None,
-                type(update).__name__,
+                type(event).__name__,
+                self._allowed,
             )
             return None
-        return await handler(update, **kwargs)
+        return await handler(event, data)
 
 
 class ErrorHandler(BaseMiddleware):
     """Catch-all: log real errors, show a friendly message, keep serving."""
 
-    async def __call__(self, handler, update: Update, **kwargs):
+    async def __call__(
+        self,
+        handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
+        event: TelegramObject,
+        data: Dict[str, Any],
+    ) -> Any:
         try:
-            return await handler(update, **kwargs)
+            return await handler(event, data)
         except Exception:
             logger.exception("Unhandled error while processing update")
-            if update.message:
-                await update.message.answer("⚠️ Something went wrong. Please try again.")
-            elif update.callback_query:
-                await update.callback_query.answer("⚠️ Something went wrong. Try again.")
+            if isinstance(event, Update):
+                if event.message:
+                    await event.message.answer("⚠️ Something went wrong. Please try again.")
+                elif event.callback_query:
+                    try:
+                        await event.callback_query.answer("⚠️ Something went wrong. Try again.")
+                    except Exception:
+                        pass
             return None

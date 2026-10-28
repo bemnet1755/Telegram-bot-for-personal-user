@@ -45,9 +45,9 @@ async def run(settings: Settings) -> None:
     )
     dp = Dispatcher()
 
-    # Middleware order matters: auth first, then error catch-all.
-    dp.update.outer_middleware(AuthMiddleware(settings))
+    # Error catch-all wraps outer updates, then auth gate.
     dp.update.outer_middleware(ErrorHandler())
+    dp.update.outer_middleware(AuthMiddleware(settings))
 
     dp.include_router(commands_router)
     dp.include_router(callbacks_router)

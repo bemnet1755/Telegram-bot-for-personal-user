@@ -8,6 +8,7 @@ from __future__ import annotations
 from aiogram.types import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    KeyboardButton,
     ReplyKeyboardMarkup,
 )
 
@@ -41,10 +42,10 @@ def main_menu_inline() -> InlineKeyboardMarkup:
 def main_menu_reply() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            ["💰 Sell", "➕ Add Stock"],
-            ["📦 Inventory", "📊 Dashboard"],
-            ["📈 Reports", "🔎 Search"],
-            ["⚙️ Settings"],
+            [KeyboardButton(text="💰 Sell"), KeyboardButton(text="➕ Add Stock")],
+            [KeyboardButton(text="📦 Inventory"), KeyboardButton(text="📊 Dashboard")],
+            [KeyboardButton(text="📈 Reports"), KeyboardButton(text="🔎 Search")],
+            [KeyboardButton(text="⚙️ Settings")],
         ],
         resize_keyboard=True,
     )
